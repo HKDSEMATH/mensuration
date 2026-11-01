@@ -8,14 +8,14 @@
     <script>
         MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
-            svg: { fontCache: 'global', linebreaks: { inline: true } }
+            output: { displayOverflow: 'scale', linebreaks: { inline: false } }
         };
     </script>
-    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-svg.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        #question-display, .qtext { font-family: 'Times New Roman', Times, serif; }
+        #question-display, #l3-blocks, .qtext { font-family: 'Times New Roman', Times, serif; }
         .mathvar { font-style: italic; }
 
         /* ==== Exam-figure SVG style (white background, black lines, no fills) ==== */
@@ -155,6 +155,7 @@
         #l3-area mjx-container svg,
         #l3-blocks mjx-container svg,
         #mc-options mjx-container svg { display: inline-block !important; }
+        .option-btn mjx-container { display: block; margin-left: auto !important; margin-right: auto !important; }
         /* Keep long prose MC choices inside their box: allow the option text to wrap */
         #mc-options .option-btn { white-space: normal; overflow-wrap: break-word; word-break: break-word; }
         #mc-options .option-btn > div { max-width: 100%; }
@@ -458,7 +459,7 @@
                 </div>
             </div>
 
-            <div id="question-display" class="text-lg sm:text-xl text-white mb-6 overflow-x-auto py-6 px-4 text-left leading-relaxed min-h-[120px] max-w-2xl mx-auto">
+            <div id="question-display" class="text-lg sm:text-xl text-white mb-6 py-6 px-4 text-left leading-relaxed min-h-[120px] max-w-2xl mx-auto">
                 <!-- MathJax renders here -->
             </div>
 
@@ -612,7 +613,7 @@
         const GOOGLE_SCRIPT_URL =
             'https://script.google.com/macros/s/AKfycbzEPxHLxCtpDAZvzVyOKl9cXtc20l3HnBnW46KtHtmqTwOPiZ2_dtuHlrqMGQgfWJdziQ/exec';
 
-        const APP_VERSION = '3';
+        const APP_VERSION = '4';
         (function watchAppVersion() {
             // GitHub Pages serves this site as .../<repo>/ (index.html). Tolerate
             // every URL shape: no trailing slash, query strings, direct index.html link.
@@ -2137,12 +2138,18 @@
 // --- VARIABLE ITALICS (paper-style; MathJax segments untouched) ---
         // 'a' is deliberately excluded: it is usually the English article ("In a pie
         // chart"). Questions that use 'a' as a variable wrap it manually (<i>a</i>).
+        // Uppercase point/vertex names are italic too (teacher rule 2026-10): single
+        // capitals (A, B) and runs of 2-6 capitals (ABC, PQRS, the A/B in "Box A").
+        // Known abbreviations (DSE/TSA/MC/HKDSE/OK) and Roman numerals stay upright.
         const MATHVAR_SET = new Set('bcdhk mnprstuvwxyz'.split('').filter(c => c !== ' '));
+        const NAME_SKIP = new Set(['DSE', 'TSA', 'MC', 'HKDSE', 'OK', 'II', 'III', 'IV', 'VI', 'IX']);
         function styleVars(html) {
             return String(html).split(/(<[^>]+>|\$[^$]*\$)/).map(seg => {
                 if (seg.charAt(0) === '<' || seg.charAt(0) === '$') return seg;
-                return seg.replace(/(^|[^A-Za-z])([A-Za-z])(?=[^A-Za-z]|$)/g,
-                    (m, pre, ch) => pre + (MATHVAR_SET.has(ch) ? '<i class="mathvar">' + ch + '</i>' : ch));
+                seg = seg.replace(/(^|[^A-Za-z])([A-Za-z])(?=[^A-Za-z]|$)/g,
+                    (m, pre, ch) => pre + ((MATHVAR_SET.has(ch) || (/[A-Z]/.test(ch) && ch !== 'I')) ? '<i class="mathvar">' + ch + '</i>' : ch));
+                return seg.replace(/(^|[^A-Za-z0-9])([A-Z]{2,6})(?![A-Za-z0-9])/g,
+                    (m, pre, run) => NAME_SKIP.has(run) ? m : pre + '<i class="mathvar">' + run + '</i>');
             }).join('');
         }
 
@@ -2713,7 +2720,7 @@
                 <span class="text-sm font-bold text-emerald-400">Part ${part.partLabel}</span>
                 <span id="l3-status-${pi}" class="${part.done ? 'text-green-400' : 'text-slate-400'} text-sm font-semibold">${part.done ? '✓ Correct' : ''}</span>
             </div>`;
-            inner += `<div id="l3-q-${pi}" class="text-lg sm:text-xl text-white mb-3 text-left overflow-x-auto px-4 min-h-[40px] leading-relaxed qtext">${styleVars(part.qHtml || part.text || '')}</div>`;
+            inner += `<div id="l3-q-${pi}" class="text-lg sm:text-xl text-white mb-3 text-left px-4 min-h-[40px] leading-relaxed qtext">${styleVars(part.qHtml || part.text || '')}</div>`;
             if (part.done) {
                 inner += `<div class="text-center text-green-400 text-sm py-2 font-semibold">Answer: $ ${part.mcAnswerStr} $</div>`;
             } else if (part.mode === 'mc') {
