@@ -150,15 +150,25 @@
         #question-display mjx-container,
         #l3-area mjx-container,
         #l3-blocks mjx-container,
-        #mc-options mjx-container { margin: 0 0.25em !important; font-size: 1em !important; }
+        #mc-options mjx-container,
+        #error-log-list mjx-container,
+        #error-log-question mjx-container,
+        #error-log-mc-options mjx-container { margin: 0 0.25em !important; font-size: 1em !important; }
         #question-display mjx-container svg,
         #l3-area mjx-container svg,
         #l3-blocks mjx-container svg,
-        #mc-options mjx-container svg { display: inline-block !important; }
+        #mc-options mjx-container svg,
+        #error-log-list mjx-container svg,
+        #error-log-question mjx-container svg,
+        #error-log-mc-options mjx-container svg { display: inline-block !important; }
         .option-btn mjx-container { display: block; margin-left: auto !important; margin-right: auto !important; }
         /* Keep long prose MC choices inside their box: allow the option text to wrap */
         #mc-options .option-btn { white-space: normal; overflow-wrap: break-word; word-break: break-word; }
         #mc-options .option-btn > div { max-width: 100%; }
+        /* Error Log Book list: keep figures compact so one card fits the scroll box
+           (the full-size figure is shown again on the redo screen). */
+        #error-log-list img[data-fig] { max-height: 150px !important; width: auto !important; margin: 6px auto !important; padding: 6px !important; }
+        #error-log-list svg.fig-svg { max-height: 150px !important; width: auto !important; height: auto !important; }
         .glass-panel {
             background: rgba(30, 41, 59, 0.8);
             backdrop-filter: blur(12px);
@@ -386,6 +396,20 @@
             </div>
         </div>
 
+        <!-- Error Log Book -->
+        <div class="glass-panel rounded-2xl p-5 shadow-xl border border-red-500/30 relative">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3 border-b border-slate-700/60 pb-3">
+                <h3 class="text-lg font-bold text-red-400 flex items-center gap-2">📕 Error Log Book</h3>
+                <span id="error-log-count" class="text-xs font-semibold text-slate-400 bg-slate-900/70 border border-slate-700 rounded-lg px-3 py-1">Empty</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">Wrong answers are saved here. Click <strong class="text-red-300">Unhide Questions</strong> to see them, then press Redo — a correct answer earns back its marks and moves automatically to the next part or question.</p>
+            <div class="flex items-center justify-between gap-2">
+                <button id="error-log-toggle" onclick="toggleErrorLogList()" class="bg-red-600 hover:bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-lg transition active:scale-95">👁 Unhide Questions</button>
+                <span id="error-log-empty" class="hidden text-sm italic text-slate-400">No mistakes logged — well done! 🎉</span>
+            </div>
+            <div id="error-log-list" class="hidden space-y-2 mt-3 max-h-72 overflow-y-auto pr-1"></div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <button onclick="startGame(0)" class="glass-panel rounded-2xl p-6 text-left hover:-translate-y-1 transition duration-300 border-t-4 border-green-500 group relative overflow-hidden">
                 <div class="flex justify-between items-center mb-2">
@@ -470,7 +494,7 @@
                 </div>
             </div>
 
-            <div id="question-display" class="text-lg sm:text-xl text-white mb-6 py-6 px-4 text-left leading-relaxed min-h-[120px] max-w-2xl mx-auto">
+            <div id="question-display" class="text-lg sm:text-xl text-white mb-6 py-6 text-left leading-relaxed min-h-[120px] max-w-full">
                 <!-- MathJax renders here -->
             </div>
 
@@ -506,6 +530,60 @@
             <!-- Level 3: multi-part (a)(b)(c) blocks, each with its own question + answer area -->
             <div id="l3-area" class="hidden w-full mt-auto">
                 <div id="l3-blocks" class="flex flex-col gap-4"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ERROR LOG BOOK REDO SCREEN (full screen, same layout as the game screen) -->
+    <div id="error-log-screen" class="hidden w-full max-w-2xl flex flex-col gap-4">
+
+        <div class="flex flex-wrap justify-between items-center gap-2 bg-slate-800 rounded-full px-6 py-3 shadow-lg border border-slate-700">
+            <div class="font-bold text-red-400 flex items-center gap-2">
+                <span class="text-lg">📕</span> Error Log Book
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="error-log-reward" class="text-sm font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1">+2 marks</span>
+                <button onclick="closeErrorLog()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition active:scale-95">
+                    Exit
+                </button>
+            </div>
+        </div>
+
+        <div id="error-log-main-area" class="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl text-center min-h-[350px] flex flex-col relative w-full">
+
+            <div class="w-full flex justify-between items-center mb-2 border-b border-slate-700/50 pb-3">
+                <div class="flex flex-col text-left">
+                    <h3 class="text-slate-300 text-sm font-semibold">Redo the question you missed:</h3>
+                    <div class="flex gap-3 flex-wrap">
+                        <span class="text-xs text-amber-400 font-semibold" id="error-log-mode-hint"></span>
+                        <span class="text-xs text-sky-400 font-semibold" id="error-log-level"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-log-question" class="qtext text-lg sm:text-xl text-white mb-6 py-6 text-left leading-relaxed max-w-full"></div>
+
+            <div id="error-log-mc-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden w-full mt-auto"></div>
+
+            <div id="error-log-fill-area" class="hidden flex flex-col items-center gap-4 w-full max-w-md mx-auto mt-auto">
+                <p class="text-[11px] text-slate-400 text-center leading-tight">
+                    Type the number with its unit when the question asks for one, e.g. <span class='font-mono text-emerald-400'>8 cm²</span> or <span class='font-mono text-emerald-400'>288π cm³</span>.
+                </p>
+
+                <div class="flex gap-2 w-full">
+                    <input type="text" id="error-log-input" placeholder="e.g. 8 cm²" oninput="updateErrorLogPreview()" onkeypress="if(event.key==='Enter')submitErrorLogFill()" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-lg font-mono text-white outline-none focus:border-amber-500 transition shadow-inner">
+                    <button onclick="submitErrorLogFill()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 rounded-lg text-base transition shadow-md active:scale-95">
+                        Submit
+                    </button>
+                </div>
+
+                <div id="error-log-helpers" class="flex flex-wrap gap-2 justify-center w-full mt-1"></div>
+
+                <div class="w-full p-4 bg-slate-900/60 border border-slate-700 rounded-lg text-center min-h-[80px] flex flex-col justify-center items-center mt-2">
+                    <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1">Live Answer Preview</span>
+                    <div id="error-log-preview" class="text-xl text-slate-300 min-h-[30px] flex items-center justify-center">Empty</div>
+                </div>
             </div>
 
         </div>
@@ -549,52 +627,6 @@
         </div>
     </div>
 
-    <!-- WRONG ANSWER TECHNIQUE REFLECTION MODAL -->
-    <div id="wrong-reflection-modal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center z-[60] p-4 backdrop-blur-md transition-opacity">
-        <div class="glass-panel border-2 border-red-500/40 max-w-md w-full rounded-2xl shadow-2xl p-6 flex flex-col">
-            <div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-3">
-                <span class="text-3xl">🛑</span>
-                <h3 class="text-xl font-bold text-red-400">Wait! Let's Reflect</h3>
-            </div>
-            <p class="text-slate-300 mb-6 text-sm">You got that one wrong. Before moving on, which <strong>technique</strong> was primarily needed to solve that question?</p>
-
-            <div class="space-y-3">
-                <button onclick="submitWrongReflection('cone_volume')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Cone / Pyramid Volume</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">\(V=\frac{1}{3}\pi r^2 h\)</span>
-                </button>
-                <button onclick="submitWrongReflection('sphere')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Sphere / Hemisphere</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">\(V=\frac{4}{3}\pi r^3\), \(A=4\pi r^2\)</span>
-                </button>
-                <button onclick="submitWrongReflection('cylinder')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Cylinder</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">\(V=\pi r^2 h\)</span>
-                </button>
-                <button onclick="submitWrongReflection('sector')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Sector · Arc · Segment</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">\(\frac{\theta}{360}\pi r^2\)</span>
-                </button>
-                <button onclick="submitWrongReflection('similar_solids')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Similar Solids</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">\(k,\ k^2,\ k^3\)</span>
-                </button>
-                <button onclick="submitWrongReflection('area_ratio')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Area Ratio</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">\(\frac{A_1}{A_2}=\left(\frac{l_1}{l_2}\right)^2\)</span>
-                </button>
-                <button onclick="submitWrongReflection('percent_change')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">% Change</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">scale by \((1+p\%)\)</span>
-                </button>
-                <button onclick="submitWrongReflection('use_a')" class="w-full text-left px-4 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl transition active:scale-95 flex items-center justify-between group">
-                    <span class="text-sm font-semibold text-slate-200 group-hover:text-white">Use the Result of Part (a)</span>
-                    <span class="font-serif bg-slate-900 px-2 py-1 rounded text-xs text-amber-300">reuse the earlier answer</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- WRONG ANSWER FEEDBACK MODAL -->
     <div id="feedback-toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-950/90 backdrop-blur-md border-2 border-red-500 text-red-100 px-6 py-4 rounded-xl shadow-2xl hidden z-50 text-center max-w-sm w-full transition-all">
         <div class="flex items-center justify-center gap-2 mb-1">
@@ -624,7 +656,7 @@
         const GOOGLE_SCRIPT_URL =
             'https://script.google.com/macros/s/AKfycbybFSAODKwifwclDTUhaKiPjC20eIaUGdiBBttHXaieZP_ydlQBQxvLMjTl9PSjums/exec';
 
-        const APP_VERSION = '8';
+        const APP_VERSION = '9';
         
         // Saved identity + in-progress game (iPad Safari reloads the tab when
         // memory runs low; without these the student is thrown back to login).
@@ -683,8 +715,13 @@
         };
         const LEVEL_FLOW = { 0: 'mc', 1: 'mc', 2: 'fill', 3: 'set' };
         let scoreTotals = { level0: 0, level1: 0, level2: 0, level3: 0 };
-        let mistakeLog = [];     // mistakes + reflections pending submission to the teacher
-        let lastMistake = null;  // the mistake currently awaiting the reflection choice
+        // --- ERROR LOG BOOK: one card per full question; parts + wrongIdxs ---
+        let errorLog = [];
+        let errorLogExpanded = false; // questions stay hidden until the student clicks Unhide
+        let activeErrorEntry = null;
+        let activeErrorPart = null;
+        let activeErrorPartIdx = 0;
+        let errorLogSessionRecovered = 0; // marks recovered in the current redo session
         
         // Tracking variables for correct percentage
         let levelStats = { 
@@ -770,7 +807,7 @@
                   <text x="28" y="178" font-style="italic">A</text>
                   <text x="174" y="184" font-style="italic">B</text>
                   <text x="214" y="122" font-style="italic">C</text>
-                  <text x="66" y="112" font-style="italic">D</text>`;
+                  <text x="54" y="110" font-style="italic">D</text>`;
                 return this.figWrap(inner, 250, 220, 290);
             },
             // No dimension labels — the original bank Q456 frustum figure carries none
@@ -830,13 +867,13 @@
                   <line x1="95" y1="135" x2="255" y2="135" class="hidden-edge"/>
                   <path class="right-angle" d="M 55 165 L 65 165 L 65 175"/>
                   <text x="42" y="92" font-style="italic">B</text>
-                  <text x="150" y="88" font-style="italic">C</text>
+                  <text x="128" y="86" font-style="italic">C</text>
                   <text x="222" y="190" font-style="italic">D</text>
                   <text x="42" y="192" font-style="italic">A</text>
                   <text x="262" y="140" font-style="italic">E</text>
                   <text x="188" y="47" font-style="italic">F</text>
                   <text x="84" y="47" font-style="italic">G</text>
-                  <text x="80" y="140" font-style="italic">H</text>`;
+                  <text x="78" y="124" font-style="italic">H</text>`;
                 return this.figWrap(inner, 300, 230, 300);
             },
 
@@ -892,7 +929,7 @@
 
             // --- Level 0: Paper 2 MCQs (P2 J5 Mensuration Q440-491) ---
             generateL0: function (typeIdx) {
-                const t = typeIdx % 8;
+                const t = typeIdx % 12;
                 const instruction = "Answer the mensuration question:";
                 let qHtml = '', answerStr = '', mcTex = '', opts = [], law = 'cone_volume', src = '';
 
@@ -995,7 +1032,7 @@
                     }
                     law = 'percent_change';
                     src = 'DSE Paper 2 · Mensuration (bank Q442/453)';
-                } else {
+                } else if (t === 7) {
                     // frustum volume (bank Q456)
                     const Hf = 12, Rf = 9, hf = 8, rtf = 3;
                     const Vfull = Rf * Rf * Hf / 3;
@@ -1005,6 +1042,51 @@
                     answerStr = `${N}π`; mcTex = `${N}\\pi \\text{ cm}^3`; opts = this.piOpts(N, '\\text{ cm}^3');
                     law = 'cone_volume';
                     src = 'DSE Paper 2 · Mensuration (bank Q456)';
+                } else if (t === 8) {
+                    // pyramid TSA, square base (AIO Q12-15/22-28)
+                    // l must exceed s/2 or the pyramid is impossible
+                    const cases = [[6, 5, 96], [8, 10, 224], [10, 13, 360], [12, 17, 552], [15, 10, 525]];
+                    const [s, l, N] = cases[this.rand(0, cases.length - 1)];
+                    qHtml = `The figure shows a right pyramid with a square base of side ${s} cm. The height of each lateral face is ${l} cm. Find the total surface area of the pyramid.<br>${this.pyramidSvg(s, l)}`;
+                    answerStr = String(N); mcTex = `${N} \\text{ cm}^2`;
+                    opts = this.opts4(String(N), [String(s * s + s * l), String(s * s + 4 * s * l), String(N + 2 * s)], '\\text{ cm}^2');
+                    law = 'area_ratio';
+                    src = 'JSMIA 3B07 · Q12–15/22–28';
+                } else if (t === 9) {
+                    // composite solid: cylinder + cone, same base (AIO Q58/63/105/109/111)
+                    const r = [2, 3, 4, 5][this.rand(0, 3)];
+                    const h1 = [4, 6, 9, 12][this.rand(0, 3)];
+                    const h2 = [6, 9, 12, 15][this.rand(0, 3)];
+                    const N = r * r * h1 + r * r * h2 / 3;
+                    qHtml = `A solid consists of a right circular cylinder and a right circular cone with a common base of radius ${r} cm. The heights of the cylinder and the cone are ${h1} cm and ${h2} cm respectively. Find the volume of the solid in terms of $\\pi$.`;
+                    answerStr = `${N}π`; mcTex = `${N}\\pi \\text{ cm}^3`;
+                    opts = this.piOpts(N, '\\text{ cm}^3');
+                    law = 'cylinder';
+                    src = 'JSMIA 3B07 · Q58/63/105/109/111';
+                } else if (t === 10) {
+                    // similar solids: TSA ratio -> volume (AIO Q129-134/139/140)
+                    const pairs = [[1, 2], [2, 3], [3, 4], [2, 5]];
+                    const [p, q] = pairs[this.rand(0, pairs.length - 1)];
+                    const m = [2, 4, 5, 8][this.rand(0, 3)];
+                    const Vsmall = p * p * p * m, Vlarge = q * q * q * m;
+                    qHtml = `The ratio of the total surface areas of two similar solids is ${p * p} : ${q * q}. If the volume of the smaller solid is ${Vsmall} cm³, then the volume of the larger solid is`;
+                    answerStr = String(Vlarge); mcTex = `${Vlarge} \\text{ cm}^3.`;
+                    const c10 = [...new Set([Vlarge, Vsmall * q * q / (p * p), Vsmall * q, Vsmall * p])];
+                    while (c10.length < 4) c10.push(Vlarge + c10.length);
+                    opts = this.shuffle(c10.slice(0, 4).map(o => `$ ${o} \\text{ cm}^3. $`));
+                    law = 'similar_solids';
+                    src = 'JSMIA 3B07 · Q129–134/139/140';
+                } else {
+                    // map scale: actual area -> map area (AIO Q141/167/168)
+                    const cases = [[20000, 0.8, 20], [25000, 5, 80], [50000, 0.25, 1], [25000, 2.5, 40], [50000, 5, 20]];
+                    const [n, A, mapA] = cases[this.rand(0, cases.length - 1)];
+                    qHtml = `The scale of a map is 1 : ${n}. If the actual area of a lake is ${A} km², then the area of the lake on the map is`;
+                    answerStr = String(mapA); mcTex = `${mapA} \\text{ cm}^2.`;
+                    const c11 = [...new Set([mapA, mapA * 10, mapA * 100, mapA * 4])];
+                    while (c11.length < 4) c11.push(mapA + c11.length);
+                    opts = this.shuffle(c11.slice(0, 4).map(o => `$ ${o} \\text{ cm}^2. $`));
+                    law = 'area_ratio';
+                    src = 'JSMIA 3B07 · Q141/167/168';
                 }
 
                 return {
@@ -1020,7 +1102,7 @@
 
             // --- Level 1: S3 TSA 3B07 Areas and Volumes (III) (Q100-115) ---
             generateL1: function (typeIdx) {
-                const t = typeIdx % 5;
+                const t = typeIdx % 9;
                 const instruction = "Solve the mensuration problem:";
                 let qHtml = '', answerStr = '', mcTex = '', opts = [], law = 'cone_volume', src = '', uPlain = '';
 
@@ -1101,11 +1183,70 @@
                     }
                     law = 'similar_solids';
                     src = 'S3 TSA 3B07 · Areas and Volumes (III) (Q109-113)';
+                } else if (t === 5) {
+                    // cone reverse: volume -> radius, or TSA -> slant height (AIO Q43/45/50-54)
+                    const kind = this.rand(0, 1);
+                    if (kind === 0) {
+                        const r = [3, 6, 9, 12][this.rand(0, 3)];
+                        const h = [4, 8, 9, 12][this.rand(0, 3)];
+                        const N = r * r * h / 3;
+                        qHtml = `The volume of a right circular cone is ${N}π cm³ and its height is ${h} cm. Find the base radius of the cone.`;
+                        answerStr = String(r); mcTex = `${r} \\text{ cm}`;
+                        opts = this.numOpts(String(r), [String(r + 1), String(r - 1), String(r * 2)], '\\text{ cm}');
+                    } else {
+                        const triples = [[5, 12, 13], [8, 15, 17], [9, 12, 15], [12, 16, 20]];
+                        const [r, h, l] = triples[this.rand(0, triples.length - 1)];
+                        const N = r * (r + l);
+                        qHtml = `The total surface area of a right circular cone is ${N}π cm² and its base radius is ${r} cm. Find the slant height of the cone.`;
+                        answerStr = String(l); mcTex = `${l} \\text{ cm}`;
+                        opts = this.numOpts(String(l), [String(l + 1), String(h), String(l - 1)], '\\text{ cm}');
+                    }
+                    uPlain = 'cm';
+                    law = 'cone_volume';
+                    src = 'JSMIA 3B07 · Q43/45/50–54';
+                } else if (t === 6) {
+                    // frustum of a pyramid: subtract similar pyramids (AIO Q74/75/79)
+                    const cases = [[6, 9, 9, 513], [4, 6, 6, 152], [8, 12, 6, 608], [3, 6, 7, 147]];
+                    const [a, b, h, N] = cases[this.rand(0, cases.length - 1)];
+                    qHtml = `A frustum of a right pyramid has square bases of sides ${a} cm and ${b} cm and height ${h} cm. Find the volume of the frustum.`;
+                    answerStr = String(N); mcTex = `${N} \\text{ cm}^3`;
+                    opts = this.numOpts(String(N), [String(N + 24), String(N - 24), String(N * 2)], '\\text{ cm}^3');
+                    uPlain = 'cm3';
+                    law = 'similar_solids';
+                    src = 'JSMIA 3B07 · Q74/75/79';
+                } else if (t === 7) {
+                    // similar figures: perimeter ratio -> area (AIO Q126-128/135/136)
+                    const pairs = [[2, 3], [3, 5], [4, 5], [1, 2]];
+                    const [p, q] = pairs[this.rand(0, pairs.length - 1)];
+                    const m = [2, 3, 5, 7][this.rand(0, 3)];
+                    const A1 = p * p * m, A2 = q * q * m;
+                    qHtml = `Two similar plane figures have perimeters in the ratio ${p} : ${q}. If the area of the smaller figure is ${A1} cm², find the area of the larger figure.`;
+                    answerStr = String(A2); mcTex = `${A2} \\text{ cm}^2`;
+                    opts = this.numOpts(String(A2), [String(A1 * q / p), String(A1 * q * q), String(A2 + p * q)], '\\text{ cm}^2');
+                    uPlain = 'cm2';
+                    law = 'area_ratio';
+                    src = 'JSMIA 3B07 · Q126–128/135/136';
+                } else {
+                    // sphere / hemisphere reverse: volume or surface area -> radius (AIO Q98-101)
+                    const r = [3, 6, 9, 12][this.rand(0, 3)];
+                    const kind = this.rand(0, 1);
+                    if (kind === 0) {
+                        const N = 4 * r * r * r / 3;
+                        qHtml = `The volume of a sphere is ${N}π cm³. Find its radius.`;
+                    } else {
+                        const N = 4 * r * r;
+                        qHtml = `The surface area of a sphere is ${N}π cm². Find its radius.`;
+                    }
+                    answerStr = String(r); mcTex = `${r} \\text{ cm}`;
+                    opts = this.numOpts(String(r), [String(r * 2), String(r + 3), String(Math.round(r / 2))], '\\text{ cm}');
+                    uPlain = 'cm';
+                    law = 'sphere';
+                    src = 'JSMIA 3B07 · Q98–101';
                 }
 
                 return {
                     instruction: instruction,
-                    paper: (t === 4) ? "Paper 1" : "Paper 2",
+                    paper: (t >= 4) ? "Paper 1" : "Paper 2",
                     src: src,
                     qHtml: it(qHtml), text: it(qHtml),
                     answerStr: answerStr, mcAnswerStr: mcTex,
@@ -1117,7 +1258,7 @@
 
             // --- Level 2: Paper 1 part (a) (P1 J5 Mensuration Q205-220(a)) ---
             generateL2: function (typeIdx) {
-                const t = typeIdx % 6;
+                const t = typeIdx % 10;
                 const instruction = "Solve the mensuration problem:";
                 let qHtml = '', answerStr = '', mcTex = '', opts = [], law = 'cone_volume', src = '', uPlain = '';
 
@@ -1186,7 +1327,7 @@
                     law = 'sector';
                     uPlain = '°';
                     src = 'DSE Paper 1 · Mensuration (15-P1-Q9(a))';
-                } else {
+                } else if (t === 5) {
                     // cone height from radius + curved SA (P1 Q218(a))
                     const triples = [[14,48,50],[9,12,15],[12,16,20],[15,20,25],[20,21,29]];
                     const [r2, h2, l2] = triples[this.rand(0, triples.length - 1)];
@@ -1197,6 +1338,47 @@
                     law = 'cone_volume';
                     uPlain = 'cm';
                     src = 'DSE Paper 1 · Mensuration (23-P1-Q14(a))';
+                } else if (t === 6) {
+                    // pyramid slant edge -> height -> volume (AIO Q16/20/27)
+                    const cases = [[12, 16, 26, 24, 1536], [18, 24, 25, 20, 2880]];
+                    const [w, d, e, h, V] = cases[this.rand(0, cases.length - 1)];
+                    qHtml = `In the figure, VABCD is a right pyramid with a rectangular base ABCD of dimensions ${w} cm × ${d} cm. The length of a slant edge is ${e} cm. Find the volume of the pyramid.<br>${this.pyramidSvg(w, h)}`;
+                    answerStr = String(V); mcTex = `${V} \\text{ cm}^3`;
+                    opts = this.opts4(String(V), [String(w * d * h), String(V / 2), String(V + 240)], '\\text{ cm}^3');
+                    uPlain = 'cm3';
+                    law = 'area_ratio';
+                    src = 'JSMIA 3B07 · Q16/20/27';
+                } else if (t === 7) {
+                    // sector folded into a cone (AIO Q59/64/158)
+                    const cases = [[15, 288, 432], [20, 288, 1024], [30, 288, 3456], [15, 216, 324], [25, 216, 1500]];
+                    const [R, ang, N] = cases[this.rand(0, cases.length - 1)];
+                    qHtml = `A paper sector of radius ${R} cm and angle ${ang}° is folded to form a right circular cone. Find the volume of the cone in terms of $\\pi$.`;
+                    answerStr = `${N}π`; mcTex = `${N}\\pi \\text{ cm}^3`;
+                    opts = this.piOpts(N, '\\text{ cm}^3');
+                    uPlain = 'cm3';
+                    law = 'sector';
+                    src = 'JSMIA 3B07 · Q59/64/158';
+                } else if (t === 8) {
+                    // water depth in an inverted cone (AIO Q76/84/148/151-153/156)
+                    const cases = [[18, 216], [24, 512], [27, 729]];
+                    const [depth, N] = cases[this.rand(0, cases.length - 1)];
+                    qHtml = `An inverted right circular conical vessel has height 36 cm and base radius 12 cm. It contains ${N}π cm³ of water. Find the depth of the water.`;
+                    answerStr = String(depth); mcTex = `${depth} \\text{ cm}`;
+                    opts = this.numOpts(String(depth), [String(depth + 6), String(depth - 6), String(Math.round(depth * 1.5))], '\\text{ cm}');
+                    uPlain = 'cm';
+                    law = 'similar_solids';
+                    src = 'JSMIA 3B07 · Q76/84/148/151–153/156';
+                } else {
+                    // percentage change in surface area -> radius / volume (AIO Q143)
+                    const cases = [[21, 10, 33.1], [44, 20, 72.8], [69, 30, 119.7], [96, 40, 174.4]];
+                    const [p, rInc, vInc] = cases[this.rand(0, cases.length - 1)];
+                    const askVolume = this.rand(0, 1) === 1;
+                    qHtml = `The surface area of a sphere increases by ${p}%. Find the percentage increase in its ${askVolume ? 'volume' : 'radius'}.`;
+                    answerStr = String(askVolume ? vInc : rInc);
+                    mcTex = answerStr;
+                    opts = this.numOpts(answerStr, [String(p), String(askVolume ? rInc : vInc), String(2 * p)], '');
+                    law = 'percent_change';
+                    src = 'JSMIA 3B07 · Q143';
                 }
 
                 return {
@@ -1213,14 +1395,18 @@
 
             // --- Level 3: Paper 1 full multi-part sets (P1 J5 Mensuration Q205-220) ---
             generateL3Set: function() {
-                const t = this.rand(0, 5);
+                const t = this.rand(0, 9);
                 const setSrc = [
                     'DSE Paper 1 · Mensuration (Sample Paper-P1-Q6)',
                     'DSE Paper 1 · Mensuration (12-P1-Q12)',
                     'DSE Paper 1 · Mensuration (13-P1-Q13)',
                     'DSE Paper 1 · Mensuration (15-P1-Q9)',
                     'DSE Paper 1 · Mensuration (19-P1-Q9)',
-                    'DSE Paper 1 · Mensuration (21-P1-Q14)'
+                    'DSE Paper 1 · Mensuration (21-P1-Q14)',
+                    'JSMIA 3B07 · Q78/80/82/85',
+                    'JSMIA 3B07 · Q162',
+                    'JSMIA 3B07 · Q155/159',
+                    'JSMIA 3B07 · Q156'
                 ][t];
                 let parts;
                 if (t === 0) parts = this.setMens1();
@@ -1228,7 +1414,11 @@
                 else if (t === 2) parts = this.setMens3();
                 else if (t === 3) parts = this.setMens4();
                 else if (t === 4) parts = this.setMens5();
-                else parts = this.setMens6();
+                else if (t === 5) parts = this.setMens6();
+                else if (t === 6) parts = this.setMens7();
+                else if (t === 7) parts = this.setMens8();
+                else if (t === 8) parts = this.setMens9();
+                else parts = this.setMens10();
                 parts.forEach(p => { p.src = setSrc; });
                 return parts;
             },
@@ -1345,6 +1535,47 @@
                     this.mPart(`Find the height of the solid right circular cone Z.`, String(hZ), 'cone_volume', [String(hZ + 1), String(hZ - 1), String(hZ + 2)], undefined, '\\text{ cm}', 'cm'),
                     this.mPart(`Find the sum of the curved surface areas of X and Y in terms of $\\pi$.`, `${csaXY}π`, 'cylinder', [String(csaXY + 40), String(csaXY - 40), String(csaXY + 80)], undefined, '\\text{ cm}^2', 'cm2')
                 ];
+            },
+
+            // JSMIA 3B07 Q78/80/82/85: frustum volume + curved surface area
+            setMens7: function() {
+                const R = 18, H = 24, rt = 6, ht = 8;
+                const Vbig = R * R * H / 3, Vsmall = rt * rt * ht / 3;
+                const Vf = Vbig - Vsmall;
+                const CSA = R * Math.sqrt(R * R + H * H) - rt * Math.sqrt(rt * rt + ht * ht);
+                return [
+                    this.mPart(`A right circular cone of base radius ${R} cm and height ${H} cm is cut by a plane parallel to its base into a smaller cone of height ${ht} cm and a frustum.<br>Find the volume of the frustum in terms of $\\pi$.`, `${Vf}π`, 'cone_volume', [String(Vf + 100), String(Vf - 100), String(Vf * 2)], undefined, '\\text{ cm}^3', 'cm3'),
+                    this.mPart(`Find the curved surface area of the frustum in terms of $\\pi$.`, `${CSA}π`, 'use_a', [String(CSA + 60), String(CSA - 60), String(CSA * 2)], undefined, '\\text{ cm}^2', 'cm2')
+                ];
+            },
+
+            // JSMIA 3B07 Q162: cone -> frustum -> recast spheres
+            setMens8: function() {
+                const r = 9, h = 12, rt = 3, ht = 4;
+                const V = r * r * h / 3, Vt = rt * rt * ht / 3, Vf = V - Vt;
+                const rSphere = +(Math.cbrt(3 * Vf / (4 * 13)).toFixed(2));
+                return [
+                    this.mPart(`A solid metal right circular cone has base radius ${r} cm and height ${h} cm.<br>Find the volume of the cone in terms of $\\pi$.`, `${V}π`, 'cone_volume', [String(V + 60), String(V - 60), String(V * 2)], undefined, '\\text{ cm}^3', 'cm3'),
+                    this.mPart(`The cone is cut by a plane parallel to its base into a smaller cone of height ${ht} cm and a frustum.<br>Find the volume of the frustum in terms of $\\pi$.`, `${Vf}π`, 'use_a', [String(Vf + 60), String(Vf - 60), String(Vf * 2)], undefined, '\\text{ cm}^3', 'cm3'),
+                    this.mPart(`The frustum is melted and recast into 13 identical solid spheres. Find the radius of each sphere correct to 3 significant figures.`, String(rSphere), 'sphere', ['2.4', '2.8', '3.1'], undefined, '\\text{ cm}', 'cm')
+                ];
+            },
+
+            // JSMIA 3B07 Q155/159: similar solids + attached spheres
+            setMens9: function() {
+                return [
+                    this.mPart(`Two similar solids X and Y have total surface areas in the ratio 9 : 16. The volume of X is 432 cm³.<br>Find the volume of Y.`, '1024', 'similar_solids', ['768', '1440', '2048'], undefined, '\\text{ cm}^3', 'cm3'),
+                    this.mPart(`A solid sphere of radius 3 cm is fixed onto X and a solid sphere of radius 4 cm is fixed onto Y.<br>Are the two new solids similar?`, 'yes', 'use_a', [], undefined, '', undefined)
+                ];
+            },
+
+            // JSMIA 3B07 Q156: pour water into an inverted cone
+            setMens10: function() {
+                return [
+                    this.mPart(`An inverted right circular conical vessel has height 36 cm and base radius 12 cm. Water is poured into the vessel until the depth is 12 cm, then another 448π cm³ is added.<br>Find the final volume of water in the vessel in terms of $\\pi$.`, '512π', 'cone_volume', ['448π', '576π', '640π'], undefined, '\\text{ cm}^3', 'cm3'),
+                    this.mPart(`Find the final depth of the water.`, '24', 'use_a', ['18', '27', '30'], undefined, '\\text{ cm}', 'cm'),
+                    this.mPart(`The final volume of water is claimed to be greater than 0.5 m³.<br>Do you agree?`, 'no', 'use_a', [], undefined, '', undefined)
+                ];
             }
         };
 
@@ -1396,17 +1627,36 @@
         function pdfFig(qn) {
             const b = BANK_FIG[qn];
             if (!b) return "";
-            return `<img src="data:image/png;base64,${b}" alt="figure" style="display:block;margin:10px auto;max-width:100%;height:auto;background:#ffffff;padding:20px;border-radius:10px;"/>`;
+            return `<img data-fig="${qn}" src="data:image/png;base64,${b}" alt="figure" style="display:block;margin:10px auto;max-width:100%;height:auto;background:#ffffff;padding:20px;border-radius:10px;"/>`;
+        }
+
+        // Keep a number and its unit on the same line ("8 cm²", "15 cm", "288π cm³").
+        // Runs before it() so the inserted &nbsp; is never italicised or put inside SVG.
+        function nbUnits(s) {
+            const units = '(?:cm³|cm²|cm3|cm2|cm|mm³|mm²|mm|m³|m²|m|km²|km|kg|g|mL|L|°)';
+            return String(s).split(/(<svg[\s\S]*?<\/svg>|<[^>]*>|\$[^$]*\$)/).map(seg => {
+                if (!seg || seg.charAt(0) === '<' || seg.charAt(0) === '$') return seg;
+                return seg.replace(new RegExp('([0-9π])\\s+(' + units + ')(?![A-Za-z0-9])', 'g'), '$1&nbsp;$2');
+            }).join('');
         }
 
         // Italicize figure point names (A, AB, OAB, ΔOAC …) as $…$ math for MathJax,
         // leaving $…$ spans, \text{…}, HTML tags, option labels (A.&nbsp;) and roman numerals untouched.
+        // A sentence-initial "A" followed by a lowercase word is the English article, not a point.
         function it(s) {
-            return String(s).replace(/(<svg[\s\S]*?<\/svg>|<[^>]*>|\$[^$]*\$|\\text\{[^}]*\})|Δ([A-Z]+)|([A-Z]+)(?=\.&nbsp;)|(?<![A-Za-z$])([A-Z]{2,})(?![A-Za-z])|(?<![A-Za-z$])([A-Z])(?![A-Za-z])/g, (m, keep, tri, label, multi, single) => {
+            const src = nbUnits(String(s));
+            return src.replace(/(<svg[\s\S]*?<\/svg>|<[^>]*>|\$[^$]*\$|\\text\{[^}]*\})|Δ([A-Z]+)|([A-Z]+)(?=\.&nbsp;)|(?<![A-Za-z$])([A-Z]{2,})(?![A-Za-z])|(?<![A-Za-z$])([A-Z])(?![A-Za-z])/g, (m, keep, tri, label, multi, single, offset, whole) => {
                 if (keep !== undefined) return keep;
                 if (label !== undefined) return label;
                 if (/^I{1,3}$/.test(m)) return m;
                 if (tri !== undefined) return `$\\Delta ${tri}$`;
+                if (single === 'A') {
+                    const prev = whole.slice(0, offset);
+                    const next = whole.slice(offset + 1, offset + 7);
+                    const sentenceStart = offset === 0 || /(?:^|[.!?:]\s|<br\s*\/?>|\n)\s*$/.test(prev);
+                    // "A solid …" is the article; "A and B …" is a point label.
+                    if (sentenceStart && /^\s[a-z]/.test(next) && !/^\s(?:and|or)\b/.test(next)) return m;
+                }
                 return `$${multi !== undefined ? multi : single}$`;
             });
         }
@@ -2076,6 +2326,197 @@
             ];
             const L3SRC = ['HKDSE Sample Paper-P1-Q6', 'HKDSE 23-P1-Q14', 'HKDSE 12-P1-Q9', 'HKDSE 14-P1-Q14', 'HKDSE 16-P1-Q11', 'HKDSE 17-P1-Q12', 'HKDSE 18-P1-Q14', 'HKDSE 20-P1-Q12', 'HKDSE 22-P1-Q13', 'HKDSE 24-P1-Q13', 'HKDSE 25-P1-Q14'];
             L3SRC.forEach((s, i) => { if (DIRECT[3][i]) DIRECT[3][i].forEach(p => { p.src = s; }); });
+
+            // --- JSMIA All-in-One 3B07 direct entries (generated) ---
+            DIRECT[0].push(
+                d0('JSMIA 3B07 · Q31',
+                `VABCD is a right pyramid with a square base. It is given that BC = 15 cm and VO = 16 cm, where O is the centre of the base. Find the volume of the pyramid.`,
+                '1200', ['800', '2400', '3600'], 'use_a', '1200', '\\text{ cm}^3'),
+                d0('JSMIA 3B07 · Q33',
+                `VABCD is a right pyramid. The base ABCD is a square of side 24 cm. The total surface area of the pyramid is 1440 cm². Find the height of a lateral face.`,
+                '18', ['9', '15', '30'], 'use_a', '18', '\\text{ cm}'),
+                d0('JSMIA 3B07 · Q34',
+                `VABCD is a right pyramid with a rectangular base of dimensions 6 cm × 8 cm. If the volume of the pyramid is 192 cm³, find the length of VC.`,
+                '13', ['11', '12', '14'], 'use_a', '13', '\\text{ cm}'),
+                d0('JSMIA 3B07 · Q38',
+                `The base of a right pyramid is a rectangle of dimensions 30 cm × 42 cm. If the height of the pyramid is 20 cm, then the total surface area of the pyramid is`,
+                '3180', ['1920', '3228', '3732'], 'use_a', '3180', '\\text{ cm}^2'),
+                d0('JSMIA 3B07 · Q70',
+                `The base radius and the height of a right circular cylinder are 4 cm and 18 cm respectively while the base radius of a right circular cone is 12 cm. If the volume of the cylinder and the volume of the cone are the same, then the height of the cone is`,
+                '6', ['2', '12', '18'], 'cylinder', '6', '\\text{ cm}'),
+                d0('JSMIA 3B07 · Q93',
+                `$ABCDHEFG$ is a frustum of a right pyramid. The lower base and the upper base are squares of areas 144 cm² and 36 cm² respectively. If the height of the frustum is 8 cm, find the volume of the frustum.`,
+                '672', ['288', '576', '864'], 'similar_solids', '672', '\\text{ cm}^3'),
+                d0('JSMIA 3B07 · Q119',
+                `Given that the volume of a hemisphere is 6174π cm³, find its curved surface area.`,
+                '882\\pi', ['441\\pi', '1323\\pi', '2205\\pi'], 'sphere', '882π', '\\text{ cm}^2'),
+                d0('JSMIA 3B07 · Q120',
+                `If the radius of a sphere is measured as 6 cm correct to the nearest cm, then the least possible surface area of the sphere is`,
+                '121\\pi', ['36\\pi', '144\\pi', '169\\pi'], 'sphere', '121π', '\\text{ cm}^2'),
+                d0('JSMIA 3B07 · Q124',
+                `Six identical solid spheres of radius 3 cm are melted and recast into a solid right circular cone of height 6 cm. Find the base area of the cone.`,
+                '108\\pi', ['72\\pi', '96\\pi', '120\\pi'], 'cone_volume', '108π', '\\text{ cm}^2'),
+                d0('JSMIA 3B07 · Q164',
+                `$A$ and $B$ are two regular 9-sided polygons. $PQ : P'Q' = 4 : 9$. The area of $A$ is 32 cm². Find the area of $B$.`,
+                '162', ['48', '72', '324'], 'area_ratio', '162', '\\text{ cm}^2'),
+                d0('JSMIA 3B07 · Q165',
+                `The volumes of two similar solids are 162 cm³ and 750 cm³ respectively. If the total surface area of the smaller solid is 108 cm², find the total surface area of the larger solid.`,
+                '300', ['360', '440', '500'], 'similar_solids', '300', '\\text{ cm}^2'),
+                d0('JSMIA 3B07 · Q166',
+                `The ratio of the total surface areas of two similar solids is $25 : 64$. If the volume of the smaller solid is 250 cm³, then the volume of the larger solid is`,
+                '1024', ['400', '640', '750'], 'similar_solids', '1024', '\\text{ cm}^3')
+            );
+
+            DIRECT[1].push(
+                d1('JSMIA 3B07 · Q9',
+               `A pyramid has volume 4608 cm³. Its base is a rectangle of length 32 cm and width 18 cm. Find the height of the pyramid.`,
+               '24', 'use_a', ['8', '72', '36'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q11',
+               `The volume and the height of a pyramid are 845 cm³ and 15 cm respectively. If the base of the pyramid is a square, find the length of its side.`,
+               '13', 'use_a', ['169', '26', '39'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q14',
+               `VABCD is a right pyramid. The base ABCD is a rectangle with AB = 14 cm and BC = 30 cm. The heights VM and VN of △VAB and △VBC are 24 cm and 20 cm respectively. Find the total surface area of the pyramid.`,
+               '1356', 'use_a', ['936', '1176', '1536'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q15',
+               `VABCD is a right pyramid with a square base ABCD. The height VE of △VAB is 9 cm and the area of each lateral face is 45 cm². Find the total surface area of the pyramid.`,
+               '280', 'use_a', ['180', '325', '270'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q40',
+               `A right circular cone has height 12 cm and base radius 4 cm. Find the volume of the cone in terms of π.`,
+               '64π', 'cone_volume', ['192π', '48π', '16π'], undefined, null, '\\text{ cm}^3', 'cm3'),
+                d1('JSMIA 3B07 · Q43',
+               `If the base diameter and the volume of a right circular cone are 12 cm and 192π cm³ respectively, find the height of the cone.`,
+               '16', 'cone_volume', ['4', '8', '12'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q75',
+               `ABCDHEFG is a frustum of a right pyramid with height 22 cm. Both bases of the frustum are rectangles. $AB = 18\\text{ cm}$, $BC = 12\\text{ cm}$, $EF = 6\\text{ cm}$, $FG = 4\\text{ cm}$ and the height of pyramid $VABCD$ is 33 cm. Find the volume of frustum $ABCDHEFG$.`,
+               '2288', 'similar_solids', ['2112', '2376', '2464'], undefined, null, '\\text{ cm}^3', 'cm3'),
+                d1('JSMIA 3B07 · Q131',
+               `Two solids are similar. The ratio of the circumference of the corresponding base of the smaller solid to that of the larger solid is $5 : 12$. If the curved surface area of the larger solid is 288π cm², find the curved surface area of the smaller solid in terms of π.`,
+               '50π', 'similar_solids', ['120π', '100π', '180π'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q132',
+               `Solid $A$ and solid $B$ are similar, and their volumes are 125 cm³ and 216 cm³ respectively. If the height of solid $B$ is 18 cm, find the height of solid $A$.`,
+               '15', 'similar_solids', ['18', '12', '20'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q134',
+               `Prism $A$ and prism $B$ are similar, and their bases are regular hexagons of sides 7 cm and 12 cm respectively. If the total surface area of prism $B$ is 1728 cm², find the total surface area of prism $A$.`,
+               '588', 'similar_solids', ['1008', '343', '864'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q136',
+               `The ratio of the longest diagonals of two regular octagons is $5 : 8$. If the area of the larger octagon is 309 cm², find the area of the smaller octagon correct to 3 significant figures.`,
+               '121', 'area_ratio', ['193', '120.7', '125'], undefined, null, '\\text{ cm}^2', 'cm2')
+            );
+
+            DIRECT[2].push(
+                d1('JSMIA 3B07 · Q21',
+               `A solid metal pyramid A with a rectangular base of length 16 cm and width 5 cm is melted and recast into another solid pyramid B with a square base. The height of pyramid B is 1.25 times that of pyramid A. Find the length of each side of the base of pyramid B.`,
+               '8', 'use_a', ['10', '6.4', '16'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q28',
+               `The base of a right pyramid is a square of side 16 cm. If the volume of the pyramid is 1024 cm³, find the total surface area of the pyramid correct to 3 significant figures.`,
+               '718', 'use_a', ['461', '654', '512'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q55',
+               `The height of a circular cone is 6 times its base radius. If the volume of the cone is 1458π cm³, find its base radius.`,
+               '9', 'cone_volume', ['3', '27', '18'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q60',
+               `A right circular cone of base radius 15 cm is flattened to form a sector and a circle. If the total surface area of the cone is 975π cm², find the angle of the sector.`,
+               '108', 'sector', ['72', '144', '216'], undefined, null, '^\\circ', '°'),
+                d1('JSMIA 3B07 · Q61',
+               `A solid metal right circular cone of height 24 cm and base radius 9 cm is melted and recast into 12 identical small solid right circular cones. If the base radius of a small cone is 6 cm, find the total surface area of a small cone in terms of π.`,
+               '81π', 'cone_volume', ['54π', '90π', '108π'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q104',
+               `A solid sphere of radius 9 cm is melted and recast into a solid right circular cone of height 4 cm. Find the base radius of the circular cone.`,
+               '27', 'sphere', ['18', '24', '36'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q106',
+               `A ball of radius 8 cm is perfectly fitted into a container in the shape of a cube. Water is then poured into the container until the container is completely filled up. The ball is then taken out from the container. If no water flows out from the container, find the depth of water after the ball is taken out, correct to 3 significant figures.`,
+               '7.62', 'sphere', ['6.84', '8.00', '8.38'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q107',
+               `A circular cylindrical container of base radius 20 cm contains some water. 6 lead balls of the same diameter 10 cm are put into the container and are totally immersed in the water. If there is no water overflowing, find the increase in the depth of water, correct to 3 significant figures.`,
+               '2.50', 'sphere', ['1.67', '3.33', '5.00'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q108',
+               `A vessel consists of a right circular cylindrical part of base radius 2.5 cm and a hemispherical part of the same radius at the bottom. The vessel is held upright. If 80 cm³ of water is poured into the vessel, find the depth of water in the vessel, correct to 3 significant figures.`,
+               '4.91', 'cylinder', ['2.41', '4.07', '5.75'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q109',
+               `A solid consists of a hemisphere and a right circular cylinder with a common base of radius 12 cm. The volume of the solid is 3744π cm³. Find the height of the solid.`,
+               '30', 'sphere', ['18', '26', '34'], undefined, null, '\\text{ cm}', 'cm'),
+                d1('JSMIA 3B07 · Q113',
+               `A hemispherical shell has an external diameter of 15 cm and a uniform thickness of 1 cm. Find the total surface area of the shell in terms of π.`,
+               '211π', 'sphere', ['183π', '197π', '225π'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q114',
+               `A hemispherical bowl has a capacity of 486π cm³ and a uniform thickness of 2 mm. Find the volume of the material used to make the bowl, correct to 3 significant figures.`,
+               '104', 'sphere', ['86.4', '115', '132'], undefined, null, '\\text{ cm}^3', 'cm3'),
+                d1('JSMIA 3B07 · Q141',
+               `The actual area of a park is 864 m². If the area of the park on the map is 54 cm², find the scale of the map.`,
+               '1 : 400', 'area_ratio', ['1 : 16', '1 : 160000', '1 : 4000'], ['1 : 400', '1:400'], null, '', undefined),
+                d1('JSMIA 3B07 · Q149',
+               `A right pyramid is cut into a smaller pyramid $A$ and a frustum $B$ by a plane which is parallel to its base. The heights of pyramid $A$ and frustum $B$ are 14 cm and 4 cm respectively. If the total surface area of pyramid $A$ is 441 cm², find the total surface area of the original pyramid.`,
+               '729', 'similar_solids', ['567', '392', '1764'], undefined, null, '\\text{ cm}^2', 'cm2'),
+                d1('JSMIA 3B07 · Q153',
+               `An inverted right circular conical container contains 24 cm³ of water and the depth of water is 5 cm. If 351 cm³ of water is poured into the container and the water does not overflow, find the increase in the depth of the water.`,
+               '7.5', 'similar_solids', ['12.5', '14.8', '73.1'], undefined, null, '\\text{ cm}', 'cm')
+            );
+
+            const AIO_L3_SETS = [
+                { src: 'JSMIA 3B07 · Q17', parts: [
+                    dp(`VABC is a pyramid with height VB. The base ABC is a right-angled triangle, where ∠ABC = 90°. AB = 32 cm, VA = 40 cm and VC = 26 cm. (a) Find the height VB of the pyramid.`, '24', 'use_a', ['18', '30', '32'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) Find the length of BC.`, '10', 'use_a', ['8', '12', '14'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(c) Find the volume of the pyramid.`, '1280', 'use_a', ['3840', '960', '1600'], undefined, '\\text{ cm}^3', 'cm3')
+                ] },
+                { src: 'JSMIA 3B07 · Q24', parts: [
+                    dp(`VABCD is a right pyramid. The base ABCD is a rectangle with AB = 66 cm and BC = 32 cm. The length of a slant edge is 65 cm. (a) Find the area of △VAB.`, '1848', 'use_a', ['2145', '924', '3696'], undefined, '\\text{ cm}^2', 'cm2'),
+                    dp(`(b) Find the area of △VBC.`, '1008', 'use_a', ['1056', '504', '2016'], undefined, '\\text{ cm}^2', 'cm2'),
+                    dp(`(c) Hence, find the total surface area of the pyramid.`, '7824', 'use_a', ['7632', '5808', '5712'], undefined, '\\text{ cm}^2', 'cm2')
+                ] },
+                { src: 'JSMIA 3B07 · Q30', parts: [
+                    dp(`VABCD is a right pyramid. The base ABCD is a square of side 32 cm. The total surface area of the pyramid is 5184 cm². (a) Find the height VE of △VBC.`, '65', 'use_a', ['63', '32', '130'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) Find the volume of the pyramid.`, '21504', 'use_a', ['64512', '20480', '43008'], undefined, '\\text{ cm}^3', 'cm3'),
+                    dp(`(c) The pyramid is cut vertically from vertex V to AC to form two identical halves. Find the percentage increase in total surface area, p %, correct to 3 significant figures.`, '55.0', 'percent_change', ['27.5', '45.2', '66.3'], undefined, '\\%', undefined)
+                ] },
+                { src: 'JSMIA 3B07 · Q53', parts: [
+                    dp(`The total surface area of a right circular cone is 280π cm² and its base radius is 8 cm. (a) Find the slant height of the cone.`, '27', 'cone_volume', ['35', '19', '22'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) Find the height of the cone, correct to 3 significant figures.`, '25.8', 'cone_volume', ['27.0', '24.5', '19.6'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(c) Find the volume of the cone, correct to 3 significant figures.`, '1730', 'cone_volume', ['5190', '1830', '1620'], undefined, '\\text{ cm}^3', 'cm3')
+                ] },
+                { src: 'JSMIA 3B07 · Q59', parts: [
+                    dp(`A paper sector VAB of radius 20 cm and angle 288° is folded to form a paper cup in the shape of an inverted right circular cone. (a) Find the base radius of the paper cup.`, '16', 'sector', ['8', '32', '12.8'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) Find the height of the paper cup.`, '12', 'sector', ['16', '8', '15'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(c) Find the capacity of the paper cup, correct to the nearest cm³.`, '3217', 'cone_volume', ['9651', '2144', '1608'], undefined, '\\text{ cm}^3', 'cm3')
+                ] },
+                { src: 'JSMIA 3B07 · Q64', parts: [
+                    dp(`Two identical paper cups A and B are inverted right circular cones with base radius 5 cm and height 12 cm. Each cone is cut along its slant height and the two resulting sectors are joined together and folded to form a larger paper cup C. (a) Find the base radius of paper cup C.`, '10', 'sector', ['5', '13', '20'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) Find the height of paper cup C, correct to 3 significant figures.`, '8.31', 'sector', ['13', '7.07', '9.17'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(c) Find the capacity of paper cup C, correct to 3 significant figures.`, '870', 'cone_volume', ['628', '1740', '435'], undefined, '\\text{ cm}^3', 'cm3')
+                ] },
+                { src: 'JSMIA 3B07 · Q79', parts: [
+                    dp(`$ABCDHEFG$ is a frustum of a right pyramid. The upper base and the lower base of the frustum are squares of sides 6 cm and 15 cm respectively. $VP$ and $VQ$ are the heights of pyramids $VEFGH$ and $VABCD$ respectively, and $PQ = 6\\text{ cm}$. (a) Find the height of pyramid $VABCD$.`, '10', 'similar_solids', ['8', '12', '15'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) Find the volume of the frustum.`, '702', 'use_a', ['678', '750', '810'], undefined, '\\text{ cm}^3', 'cm3')
+                ] },
+                { src: 'JSMIA 3B07 · Q86', parts: [
+                    dp(`A closed right circular conical container of base radius 28 cm and height 32 cm is inverted and held vertically. The depth of water is 24 cm. (a) Find the volume of water in the container in terms of π.`, '3528π', 'cone_volume', ['3136π', '3920π', '4704π'], undefined, '\\text{ cm}^3', 'cm3'),
+                    dp(`(b) The container is then turned upside down and placed on a horizontal table. Find the depth of water in the container correct to 3 significant figures.`, '5.34', 'similar_solids', ['4.82', '6.15', '8.00'], undefined, '\\text{ cm}', 'cm')
+                ] },
+                { src: 'JSMIA 3B07 · Q87', parts: [
+                    dp(`A frustum is made by cutting off the lower part of an inverted right circular cone of base radius 21 cm and height 35 cm. The height of the frustum is 10 cm. (a) Find the volume of the frustum in terms of π.`, '3270π', 'cone_volume', ['3060π', '3420π', '3690π'], undefined, '\\text{ cm}^3', 'cm3'),
+                    dp(`A container consists of an upper part in the shape of the frustum in (a) and a lower part in the shape of a right circular cylinder of height 18 cm, with a common base. The container now contains 3600π cm³ of water. (b)(i) Find the depth of water in the container.`, '16', 'cylinder', ['12', '14', '18'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b)(ii) Find the remaining capacity of the container in terms of π.`, '3720π', 'use_a', ['3270π', '3600π', '4050π'], undefined, '\\text{ cm}^3', 'cm3')
+                ] },
+                { src: 'JSMIA 3B07 · Q110', parts: [
+                    dp(`A solid consists of a right circular cone and a hemisphere with a common base. The height and the base radius of the cone are $h\\text{ cm}$ and $(h - 6)\\text{ cm}$ respectively. It is given that the volume of the cone is equal to the volume of the hemisphere. (a) Find $h$.`, '12', 'cone_volume', ['8', '10', '15'], undefined, '', undefined),
+                    dp(`(b) Find the total surface area of the solid correct to the nearest cm².`, '479', 'use_a', ['428', '512', '592'], undefined, '\\text{ cm}^2', 'cm2'),
+                    dp(`(c) If the solid is cut vertically into two identical parts, find the increase in the total surface area correct to the nearest cm².`, '257', 'use_a', ['129', '201', '314'], undefined, '\\text{ cm}^2', 'cm2')
+                ] },
+                { src: 'JSMIA 3B07 · Q111', parts: [
+                    dp(`A solid consists of a right circular cylinder and two hemispheres, each with a diameter of 6 cm. The two hemispheres share a common base with the cylinder. The length of the solid is 18 cm. (a) Find the volume of the solid in terms of π.`, '144π', 'sphere', ['126π', '162π', '198π'], undefined, '\\text{ cm}^3', 'cm3'),
+                    dp(`(b) Find the total surface area of the solid in terms of π.`, '108π', 'cylinder', ['90π', '126π', '144π'], undefined, '\\text{ cm}^2', 'cm2')
+                ] },
+                { src: 'JSMIA 3B07 · Q115', parts: [
+                    dp(`A right circular cone of base radius 15 cm and height 25 cm is crafted from a solid sphere. The centre of the sphere lies on the height of the cone. (a) Find the radius of the sphere.`, '17', 'sphere', ['15', '18', '20'], undefined, '\\text{ cm}', 'cm'),
+                    dp(`(b) What percentage of the volume of the sphere is the volume of the cone? (Give your answer correct to 3 significant figures.)`, '28.6', 'use_a', ['24.5', '32.4', '35.8'], undefined, '\\%', undefined)
+                ] },
+                { src: 'JSMIA 3B07 · Q143', parts: [
+                    dp(`The surface area of a sphere increases by 44%. Find the percentage increase in the radius of the sphere.`, '20', 'percent_change', ['44', '22', '88'], undefined, '', undefined),
+                    dp(`The surface area of a sphere increases by 44%. Find the percentage increase in the volume of the sphere.`, '72.8', 'percent_change', ['60', '132', '44'], undefined, '', undefined)
+                ] },
+            ];
+            AIO_L3_SETS.forEach(s => s.parts.forEach(p => { p.src = s.src; }));
+            AIO_L3_SETS.forEach(s => DIRECT[3].push(s.parts));
+
+            // 51 entries, 72 question parts
         })();
 
         // --- MENSURATION ANSWER CHECKING (with π support) ---
@@ -2160,7 +2601,11 @@
         const MATHVAR_SET = new Set('bcdhk mnprstuvwxyz'.split('').filter(c => c !== ' '));
         const NAME_SKIP = new Set(['DSE', 'TSA', 'MC', 'HKDSE', 'OK', 'II', 'III', 'IV', 'VI', 'IX']);
         function styleVars(html) {
-            return String(html).split(/(<[^>]+>|\$[^$]*\$)/).map(seg => {
+            // Figures are inline SVG: a <text> label is already the exam-style label,
+            // so never inject <i class="mathvar"> into it. An HTML element inside
+            // <svg> makes the parser break out of the SVG: the labels disappear from
+            // the figure and leak as plain text ("ABCD") underneath it.
+            return String(html).split(/(<svg[\s\S]*?<\/svg>|<[^>]+>|\$[^$]*\$)/).map(seg => {
                 if (seg.charAt(0) === '<' || seg.charAt(0) === '$') return seg;
                 seg = seg.replace(/(^|[^A-Za-z])([A-Za-z])(?=[^A-Za-z]|$)/g,
                     (m, pre, ch) => pre + ((MATHVAR_SET.has(ch) || (/[A-Z]/.test(ch) && ch !== 'I')) ? '<i class="mathvar">' + ch + '</i>' : ch));
@@ -2245,7 +2690,7 @@
 
             loadScores();
             
-            loadProgress();loadMistakes();
+            loadProgress();loadErrorLog();
 
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('dashboard-screen').classList.remove('hidden');
@@ -2258,7 +2703,7 @@
             studentProfile = null;
             
             try { localStorage.removeItem(PROFILE_KEY); localStorage.removeItem(RESUME_KEY); } catch (e) {}
-            document.getElementById('game-screen').classList.add('hidden');document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');document.getElementById('error-log-screen').classList.add('hidden');document.getElementById('dashboard-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('student-class').value = '';
             document.getElementById('student-no').value = '';
@@ -2284,6 +2729,7 @@
                 }
             }
             updateScoreboardUI();
+            renderErrorLogBook();
         }
 
         // --- SCORE BOARD LOGIC ---
@@ -2432,65 +2878,403 @@
             return true;
         }
 
-        // --- MISTAKE & REFLECTION LOG (sent to teacher on submit, analysed by the mistake-analyst agent) ---
-        function getMistakeStorageKey() {
-            if (!studentProfile) return null;
-            return `hkdse_mens_mistakes_${studentProfile.class}_${studentProfile.no}_${studentProfile.name}`;
+        // --- ERROR LOG BOOK: wrong answers are saved for mark recovery ---
+        function getErrorLogStorageKey() {
+            const base = getScoreStorageKey();
+            return base ? base + '_errors' : null;
         }
 
-        function loadMistakes() {
-            const key = getMistakeStorageKey();
-            mistakeLog = [];
-            lastMistake = null;
-            if (!key) return;
-            try {
-                const raw = localStorage.getItem(key);
-                if (raw) {
-                    const saved = JSON.parse(raw);
-                    if (Array.isArray(saved)) mistakeLog = saved;
-                }
-            } catch (e) { console.log('loadMistakes error', e); }
+        // DIRECT questions carry base64 PNG figures (BANK_FIG). Storing them in
+        // localStorage would exhaust the quota, so save only the question number and
+        // rebuild the <img> from BANK_FIG when the card is drawn.
+        function shrinkFigs(html) {
+            return String(html).replace(/<img\b[^>]*\bdata-fig="(\d+)"[^>]*>/g, (m, n) =>
+                `<img data-fig="${n}" alt="figure" style="display:block;margin:10px auto;max-width:100%;height:auto;background:#ffffff;padding:20px;border-radius:10px;">`);
+        }
+        function restoreFigs(html) {
+            return String(html).replace(/<img\b[^>]*\bdata-fig="(\d+)"[^>]*>/g, (m, n) => pdfFig(parseInt(n, 10)));
         }
 
-        function saveMistakes() {
-            const key = getMistakeStorageKey();
-            if (!key) return;
-            try {
-                localStorage.setItem(key, JSON.stringify(mistakeLog));
-            } catch (e) { console.log('saveMistakes error', e); }
+        function errorLogRefund(level) {
+            return (MARKS[level] && MARKS[level].perHeart) || 2;
         }
 
-        function clearMistakes() {
-            mistakeLog = [];
-            lastMistake = null;
-            const key = getMistakeStorageKey();
-            if (key) {
-                try { localStorage.removeItem(key); } catch (e) { console.log('clearMistakes error', e); }
-            }
-        }
-
-        // Start a mistake record (called on every wrong answer BEFORE the reflection modal).
-        function logMistake(q, wrongOption) {
-            lastMistake = {
-                topic: 'Mensuration',
-                level: currentLevel,
-                instruction: q.instruction || '',
-                law: q.firstStepLaw || '',
-                text: (q.src ? q.src + ' · ' : '') + (q.text || q.qHtml || (q.displayTex ? `\\text{Simplify } ${q.displayTex}` : '')),
-                wrongOption: wrongOption || '',
-                answerStr: q.answerStr || '',
-                studentLaw: null,
-                lawCorrect: null,
-                ts: new Date().toISOString()
+        function snapshotErrorPart(p, level, modeOverride) {
+            return {
+                partLabel: p.partLabel || '',
+                qHtml: shrinkFigs(p.qHtml || p.text || ''),
+                marks: p.marks || errorLogRefund(level),
+                answerStr: p.answerStr,
+                mcAnswerStr: p.mcAnswerStr || '',
+                options: Array.isArray(p.options) ? p.options : [],
+                acceptList: p.acceptList || null,
+                requireUnit: !!p.requireUnit,
+                unitPlain: p.unitPlain || '',
+                mode: modeOverride || p.mode || ((p.paper === 'Paper 2') ? 'mc' : 'fill'),
+                firstStepLaw: p.firstStepLaw || ''
             };
         }
 
-        // Push the current mistake (now with reflection attached) into the log.
-        function commitMistake() {
-            if (!lastMistake) return;
-            mistakeLog.push(lastMistake);
-            lastMistake = null;
-            saveMistakes();
+        function loadErrorLog() {
+            errorLog = [];
+            errorLogExpanded = false;
+            activeErrorEntry = null;
+            activeErrorPart = null;
+            activeErrorPartIdx = 0;
+            const key = getErrorLogStorageKey();
+            if (!key) return;
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (!Array.isArray(saved)) return;
+                errorLog = saved.filter(e => e && e.id).map(e => {
+                    if (!Array.isArray(e.parts) || e.parts.length === 0) {
+                        e.parts = [snapshotErrorPart({
+                            partLabel: e.partLabel || '',
+                            qHtml: e.qHtml || e.text || '',
+                            answerStr: e.answerStr,
+                            mcAnswerStr: e.mcAnswerStr || '',
+                            options: e.options || [],
+                            acceptList: e.acceptList || null,
+                            mode: e.mode || (e.paper === 'Paper 2' ? 'mc' : 'fill'),
+                            firstStepLaw: e.firstStepLaw || ''
+                        }, e.level)];
+                    }
+                    if (!Array.isArray(e.wrongIdxs) || e.wrongIdxs.length === 0) e.wrongIdxs = [0];
+                    e.wrongIdxs = e.wrongIdxs.filter(i => e.parts[i]);
+                    if (e.wrongIdxs.length === 0) e.wrongIdxs = [0];
+                    if (e.setId === undefined) e.setId = null;
+                    if (!e.marks) e.marks = errorLogRefund(e.level);
+                    return e;
+                }).filter(e => e.parts[0] && e.parts[0].answerStr);
+            } catch (e) { console.log('loadErrorLog error', e); }
+        }
+
+        function saveErrorLog() {
+            const key = getErrorLogStorageKey();
+            if (!key) return;
+            try {
+                localStorage.setItem(key, JSON.stringify(errorLog));
+            } catch (e) { console.log('saveErrorLog error', e); }
+        }
+
+        function errorLogWrongIdxs(entry) {
+            return (Array.isArray(entry.wrongIdxs) && entry.wrongIdxs.length) ? entry.wrongIdxs : [0];
+        }
+
+        function errorLogRemainingParts() {
+            return errorLog.reduce((n, e) => n + errorLogWrongIdxs(e).length, 0);
+        }
+
+        function errorLogCardMarks(entry) {
+            return errorLogWrongIdxs(entry).length * errorLogRefund(entry.level);
+        }
+
+        // A correct in-game retry clears the mistake from the Error Log Book.
+        // The lost heart/mark is NOT refunded; only an Error Log Book redo refunds.
+        function removeErrorLogPart(q, level, setParts) {
+            if (!q) return;
+            if (Array.isArray(setParts) && setParts.length > 0 && q.setId) {
+                const entry = errorLog.find(e => e.setId === q.setId && e.level === level);
+                if (!entry) return;
+                const pi = (q.partIdx !== undefined && q.partIdx !== null) ? q.partIdx : 0;
+                entry.wrongIdxs = errorLogWrongIdxs(entry).filter(i => i !== pi);
+                if (entry.wrongIdxs.length === 0) {
+                    errorLog = errorLog.filter(e => e.id !== entry.id);
+                }
+                saveErrorLog();
+                return;
+            }
+            const part = snapshotErrorPart(q, level);
+            const key = level + '|' + part.qHtml + '|' + part.answerStr;
+            const before = errorLog.length;
+            errorLog = errorLog.filter(e => {
+                const p0 = e.parts && e.parts[0];
+                return !(p0 && (e.level + '|' + p0.qHtml + '|' + p0.answerStr) === key);
+            });
+            if (errorLog.length !== before) saveErrorLog();
+        }
+
+        function recordErrorLog(q, level, setParts, mode) {
+            if (!q || !q.answerStr) return;
+
+            // Multi-part set → one card for the full question; merge wrong parts by setId.
+            if (Array.isArray(setParts) && setParts.length > 0 && q.setId) {
+                let entry = errorLog.find(e => e.setId && e.setId === q.setId && e.level === level);
+                if (!entry) {
+                    entry = {
+                        id: 'e' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                        level: level,
+                        setId: q.setId,
+                        src: q.src || (setParts[0] && setParts[0].src) || '',
+                        marks: errorLogRefund(level),
+                        parts: setParts.map(p => snapshotErrorPart(p, level)),
+                        wrongIdxs: []
+                    };
+                    errorLog.push(entry);
+                }
+                const pi = (q.partIdx !== undefined && q.partIdx !== null) ? q.partIdx : 0;
+                if (entry.parts[pi] && entry.wrongIdxs.indexOf(pi) === -1) {
+                    entry.wrongIdxs.push(pi);
+                    entry.wrongIdxs.sort((a, b) => a - b);
+                }
+                saveErrorLog();
+                return;
+            }
+
+            // Single question → one-part card.
+            const part = snapshotErrorPart(q, level, mode);
+            const key = level + '|' + part.qHtml + '|' + part.answerStr;
+            const exists = errorLog.some(e => {
+                const p0 = e.parts && e.parts[0];
+                return p0 && (e.level + '|' + p0.qHtml + '|' + p0.answerStr) === key;
+            });
+            if (exists) return;
+            errorLog.push({
+                id: 'e' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                level: level,
+                setId: null,
+                src: q.src || '',
+                marks: errorLogRefund(level),
+                parts: [part],
+                wrongIdxs: [0]
+            });
+            saveErrorLog();
+        }
+
+        function renderErrorLogBook() {
+            const list = document.getElementById('error-log-list');
+            if (!list) return;
+            const toggle = document.getElementById('error-log-toggle');
+            const empty = document.getElementById('error-log-empty');
+            const countEl = document.getElementById('error-log-count');
+            const recoverable = errorLog.reduce((sum, e) => sum + errorLogCardMarks(e), 0);
+            if (countEl) {
+                countEl.textContent = errorLog.length === 0
+                    ? 'Empty'
+                    : `${errorLog.length} question${errorLog.length > 1 ? 's' : ''} · ${recoverable} mark${recoverable > 1 ? 's' : ''} recoverable`;
+            }
+
+            if (errorLog.length === 0) {
+                errorLogExpanded = false;
+                list.innerHTML = '';
+                list.classList.add('hidden');
+                if (toggle) toggle.classList.add('hidden');
+                if (empty) empty.classList.remove('hidden');
+                return;
+            }
+
+            if (empty) empty.classList.add('hidden');
+            if (toggle) {
+                toggle.classList.remove('hidden');
+                toggle.textContent = (errorLogExpanded ? '🙈 Hide Questions (' : '👁 Unhide Questions (') + errorLog.length + ')';
+            }
+
+            list.innerHTML = errorLog.map(e => {
+                const wrong = errorLogWrongIdxs(e);
+                const wrongLabels = wrong.map(i => (e.parts[i] && e.parts[i].partLabel) ? e.parts[i].partLabel : '').filter(Boolean).join(', ');
+                const tag = 'L' + e.level + (wrongLabels ? ' ' + wrongLabels : '');
+                const cardMarks = errorLogCardMarks(e);
+                const partsHtml = e.parts.map((p, i) => {
+                    const missed = wrong.indexOf(i) !== -1;
+                    return `<div class="rounded-lg border ${missed ? 'border-red-500/50 bg-red-500/5' : 'border-slate-700/60'} px-2 py-1 mb-1 last:mb-0">
+                        ${p.partLabel ? `<span class="font-bold text-amber-300">${p.partLabel}</span> ` : ''}${styleVars(restoreFigs(p.qHtml))}
+                    </div>`;
+                }).join('');
+                return `<div class="flex items-start gap-3 bg-slate-800/80 border border-slate-700 rounded-xl p-3">
+                    <span class="shrink-0 text-xs font-bold text-red-300 bg-red-500/15 border border-red-500/30 rounded-lg px-2 py-1 mt-0.5 whitespace-nowrap">${tag}</span>
+                    <div class="flex-1 min-w-0 text-sm text-slate-200 leading-relaxed qtext text-left">${partsHtml}</div>
+                    <div class="shrink-0 flex flex-col items-end gap-1">
+                        <span class="text-[11px] text-amber-300 font-bold whitespace-nowrap">+${cardMarks} mark${cardMarks > 1 ? 's' : ''}</span>
+                        <button onclick="openErrorLogEntry('${e.id}')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition active:scale-95">Redo</button>
+                    </div>
+                </div>`;
+            }).join('');
+            list.classList.toggle('hidden', !errorLogExpanded);
+            if (errorLogExpanded) mjTypeset([list]);
+        }
+
+        function toggleErrorLogList() {
+            errorLogExpanded = !errorLogExpanded;
+            const list = document.getElementById('error-log-list');
+            const toggle = document.getElementById('error-log-toggle');
+            if (list) list.classList.toggle('hidden', !errorLogExpanded);
+            if (toggle) toggle.textContent = (errorLogExpanded ? '🙈 Hide Questions (' : '👁 Unhide Questions (') + errorLog.length + ')';
+            if (errorLogExpanded && list) mjTypeset([list]);
+        }
+
+        function openErrorLogEntry(id) {
+            const entry = errorLog.find(e => e.id === id);
+            if (!entry) return;
+            const targetIdx = errorLogWrongIdxs(entry)[0];
+            const part = entry.parts[targetIdx];
+            if (!part) return;
+            const remaining = errorLogRemainingParts();
+
+            const screen = document.getElementById('error-log-screen');
+            if (screen && screen.classList.contains('hidden')) errorLogSessionRecovered = 0;
+            activeErrorEntry = entry;
+            activeErrorPartIdx = targetIdx;
+            activeErrorPart = part;
+
+            document.getElementById('error-log-level').textContent =
+                'Level ' + entry.level +
+                (part.partLabel ? ' · Part ' + part.partLabel : '') +
+                (entry.src ? ' · ' + entry.src : '') +
+                ' · ' + remaining + ' part' + (remaining > 1 ? 's' : '') + ' left';
+            document.getElementById('error-log-reward').textContent = '+' + errorLogRefund(entry.level) + ' marks';
+
+            // Show the full question; highlight the part being redone.
+            document.getElementById('error-log-question').innerHTML = entry.parts.map((p, i) => {
+                const isTarget = i === targetIdx;
+                return `<div class="rounded-lg border ${isTarget ? 'border-amber-500/60 bg-amber-500/5' : 'border-slate-700/60'} px-3 py-2 mb-2 last:mb-0 text-left">
+                    ${p.partLabel ? `<span class="font-bold text-amber-300">${p.partLabel}</span> ` : ''}${styleVars(restoreFigs(p.qHtml))}
+                </div>`;
+            }).join('');
+
+            const mcArea = document.getElementById('error-log-mc-options');
+            const fillArea = document.getElementById('error-log-fill-area');
+            const hint = document.getElementById('error-log-mode-hint');
+            const redoLabel = part.partLabel ? 'Redo Part ' + part.partLabel + ' · ' : '';
+
+            if (part.mode === 'mc') {
+                mcArea.classList.remove('hidden');
+                fillArea.classList.add('hidden');
+                hint.textContent = redoLabel + 'Multiple Choice';
+                mcArea.innerHTML = '';
+                part.options.forEach((o, idx) => {
+                    mcArea.innerHTML += `<button onclick="submitErrorLogMC(${idx})" class="option-btn bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl p-4 text-xl transition-all shadow-md active:scale-95 min-h-[64px] flex items-center justify-center"><div class="w-full text-center">${o}</div></button>`;
+                });
+            } else {
+                mcArea.classList.add('hidden');
+                mcArea.innerHTML = '';
+                fillArea.classList.remove('hidden');
+                hint.textContent = redoLabel + 'Fill-in';
+                document.getElementById('error-log-input').value = '';
+                document.getElementById('error-log-preview').textContent = 'Empty';
+                const helpers = document.getElementById('error-log-helpers');
+                helpers.innerHTML = '';
+                ['π', '/', '.', '-', ':', '°', 'cm²', 'cm³', 'm²', 'm³'].forEach(ch => {
+                    helpers.innerHTML += `<button onclick="insertErrorLogChar('${ch}')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-white font-mono text-sm transition">${ch}</button>`;
+                });
+            }
+
+            document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            if (screen) {
+                screen.classList.remove('hidden');
+                window.scrollTo(0, 0);
+                mjTypeset([screen]);
+            }
+        }
+
+        function closeErrorLog() {
+            const screen = document.getElementById('error-log-screen');
+            if (screen) screen.classList.add('hidden');
+            const dashboard = document.getElementById('dashboard-screen');
+            if (dashboard) dashboard.classList.remove('hidden');
+            renderErrorLogBook();
+            activeErrorEntry = null;
+            activeErrorPart = null;
+            activeErrorPartIdx = 0;
+            window.scrollTo(0, 0);
+        }
+
+        function insertErrorLogChar(ch) {
+            const f = document.getElementById('error-log-input');
+            const start = f.selectionStart ?? f.value.length;
+            const end = f.selectionEnd ?? f.value.length;
+            f.value = f.value.substring(0, start) + ch + f.value.substring(end, f.value.length);
+            const pos = start + ch.length;
+            f.setSelectionRange(pos, pos);
+            f.focus();
+            updateErrorLogPreview();
+        }
+
+        function updateErrorLogPreview() {
+            const input = document.getElementById('error-log-input');
+            const box = document.getElementById('error-log-preview');
+            if (!input || !box) return;
+            updatePreviewBox(box, input.value);
+        }
+
+        function submitErrorLogMC(btnIdx) {
+            const part = activeErrorPart;
+            if (!part) return;
+            finishErrorLogAttempt(part, part.options[btnIdx] === '$ ' + part.mcAnswerStr + ' $');
+        }
+
+        function submitErrorLogFill() {
+            const part = activeErrorPart;
+            if (!part) return;
+            const rawInput = document.getElementById('error-log-input').value;
+            if (!rawInput.trim()) {
+                showToast("Please enter an answer.", "info");
+                return;
+            }
+            const cleanInput = rawInput.toLowerCase().replace(/\s+/g, '');
+            const isCorrect = checkFillAnswer(cleanInput, part);
+            if (isCorrect && !unitOk(cleanInput, part)) {
+                showToast(`Please include the unit — e.g. ${unitDisplay(part.unitPlain)}`, "info");
+                return;
+            }
+            finishErrorLogAttempt(part, isCorrect);
+        }
+
+        function finishErrorLogAttempt(part, isCorrect) {
+            if (!isCorrect) {
+                const panel = document.getElementById('error-log-main-area');
+                if (panel) {
+                    panel.classList.remove('shake');
+                    void panel.offsetWidth;
+                    panel.classList.add('shake');
+                    setTimeout(() => panel.classList.remove('shake'), 400);
+                }
+                showToast("Not quite — try again. The question stays in your Error Log Book.", "error");
+                return;
+            }
+
+            const entry = activeErrorEntry;
+            if (!entry) return;
+            const entryIdx = errorLog.findIndex(e => e.id === entry.id);
+            if (entryIdx === -1) return;
+
+            const refund = errorLogRefund(entry.level);
+            scoreTotals['level' + entry.level] = (scoreTotals['level' + entry.level] || 0) + refund;
+            entry.wrongIdxs = errorLogWrongIdxs(entry).filter(i => i !== activeErrorPartIdx);
+            if (entry.wrongIdxs.length === 0) errorLog.splice(entryIdx, 1);
+            saveScores();
+            saveErrorLog();
+            updatePassportUI();
+            errorLogSessionRecovered += refund;
+
+            if (errorLogRemainingParts() === 0) {
+                showToast('All error questions cleared! +' + errorLogSessionRecovered + ' mark' + (errorLogSessionRecovered > 1 ? 's' : '') + ' recovered. 🎉', "success");
+                closeErrorLog();
+                return;
+            }
+
+            showToast('Correct! +' + refund + ' marks. Next part…', "success");
+            setTimeout(() => {
+                if (!activeErrorEntry) return;
+                const stillThere = errorLog.find(e => e.id === entry.id);
+                const next = stillThere || errorLog[0];
+                if (next) openErrorLogEntry(next.id);
+            }, 550);
+        }
+
+        function resolveErrorLogRedo(id, isCorrect) {
+            const entry = errorLog.find(e => e.id === id);
+            if (!entry || !isCorrect) return false;
+            const refund = errorLogRefund(entry.level);
+            scoreTotals['level' + entry.level] = (scoreTotals['level' + entry.level] || 0) + refund;
+            entry.wrongIdxs = errorLogWrongIdxs(entry).slice(1);
+            if (entry.wrongIdxs.length === 0) errorLog = errorLog.filter(e => e.id !== id);
+            saveScores();
+            saveErrorLog();
+            updatePassportUI();
+            return true;
         }
 
         function updateScoreboardUI() {
@@ -2524,7 +3308,11 @@
                 badgeRecords = { level0: false, level1: false, level2: false, level3: false };
                 levelStats = { level0: { correct: 0, total: 0 }, level1: { correct: 0, total: 0 }, level2: { correct: 0, total: 0 }, level3: { correct: 0, total: 0 } };
                 scoreTotals = { level0: 0, level1: 0, level2: 0, level3: 0 };
+                errorLog = [];
+                errorLogExpanded = false;
+                activeErrorEntry = null;
                 saveScores();
+                saveErrorLog();
                 
                 saveProgress();
                 clearGameState();
@@ -2536,6 +3324,7 @@
         function startGame(level) {
             currentLevel = level;
             document.getElementById('dashboard-screen').classList.add('hidden');
+            document.getElementById('error-log-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             
             const levelColors = ['text-green-400', 'text-teal-400', 'text-amber-400', 'text-red-400'];
@@ -2579,6 +3368,7 @@
                     usedAns.add(aKey);
                     parts.forEach((part, pi) => {
                         part.setNo = i + 1;
+                        part.setId = 's' + Date.now() + '_' + i;
                         part.partIdx = pi;
                         part.partLabel = ['(a)', '(b)', '(c)'][pi];
                         part.paper = 'Paper 1';
@@ -2601,7 +3391,7 @@
             const kD = Math.min(DIRECT_PER_GAME[level] || 0, directPool.length);
             const pickedDirect = MathGen.shuffle(directPool).slice(0, kD);
             const genCount = NUM_QUESTIONS - kD;
-            const typeCount = { 0: 8, 1: 5, 2: 6 };
+            const typeCount = { 0: 12, 1: 9, 2: 10 };
             const usedTexts = new Set();
             const usedOpts = new Set();
             const usedAns = new Set();
@@ -2831,7 +3621,6 @@
             if (part.done) return;
             activePart = part;
             const isCorrect = (part.options[btnIdx] === `$ ${part.mcAnswerStr} $`);
-            if (!isCorrect) logMistake(part, part.options[btnIdx]);
             processSetAnswer(pi, isCorrect);
         }
 
@@ -2850,11 +3639,9 @@
             const isCorrect = checkFillAnswer(cleanInput, part);
             if (isCorrect && !unitOk(cleanInput, part)) {
                 showToast(`Please include the unit — e.g. ${unitDisplay(part.unitPlain)}`, "info");
-                logMistake(part, cleanInput);
                 processSetAnswer(pi, false);
                 return;
             }
-            if (!isCorrect) logMistake(part, cleanInput);
             processSetAnswer(pi, isCorrect);
         }
 
@@ -2867,7 +3654,7 @@
                 <span class="text-sm font-bold text-emerald-400">Part ${part.partLabel}</span>
                 <span id="l3-status-${pi}" class="${part.done ? 'text-green-400' : 'text-slate-400'} text-sm font-semibold">${part.done ? '✓ Correct' : ''}</span>
             </div>`;
-            inner += `<div id="l3-q-${pi}" class="text-lg sm:text-xl text-white mb-3 text-left px-4 min-h-[40px] leading-relaxed qtext">${styleVars(part.qHtml || part.text || '')}</div>`;
+            inner += `<div id="l3-q-${pi}" class="text-lg sm:text-xl text-white mb-3 text-left min-h-[40px] leading-relaxed qtext">${styleVars(part.qHtml || part.text || '')}</div>`;
             if (part.done) {
                 inner += `<div class="text-center text-green-400 text-sm py-2 font-semibold">Answer: $ ${part.mcAnswerStr} $</div>`;
             } else if (part.mode === 'mc') {
@@ -2906,6 +3693,7 @@
                 showToast(`Part ${currentSets[currentSetIndex][pi].partLabel} correct! Awesome job.`, "success");
                 
                 const set = currentSets[currentSetIndex];
+                removeErrorLogPart(set[pi], currentLevel, set);
                                 animateCorrect();
                                 set[pi].done = true;
                 rebuildL3Block(pi);
@@ -2924,9 +3712,7 @@
                     }, 700);
                 }
             } else {
-                                animateWrong();
-                                unlockSkip();
-                                showWrongReflectionModal();
+                handleWrongAnswer(currentSets[currentSetIndex][pi], currentSets[currentSetIndex], currentSets[currentSetIndex][pi].mode);
             }
         
             saveGameState();
@@ -2959,7 +3745,6 @@
             const q = currentQuestions[currentQuestionIndex];
             const selectedText = q.options[btnIndex];
             const isCorrect = (selectedText === `$ ${q.mcAnswerStr} $`);
-            if (!isCorrect) logMistake(q, selectedText);
             processAnswer(isCorrect);
         }
 
@@ -2978,11 +3763,9 @@
             const isCorrect = checkFillAnswer(cleanInput, q);
             if (isCorrect && !unitOk(cleanInput, q)) {
                 showToast(`Please include the unit — e.g. ${unitDisplay(q.unitPlain)}`, "info");
-                logMistake(q, cleanInput);
                 processAnswer(false);
                 return;
             }
-            if (!isCorrect) logMistake(q, cleanInput);
             processAnswer(isCorrect);
         }
 
@@ -2996,6 +3779,7 @@
                                 animateCorrect();
                                 showToast("Correct! Awesome job.", "success");
                 RoughWork.clearAllSessions();
+                removeErrorLogPart(currentQuestions[currentQuestionIndex], currentLevel, null);
                 qCounter++;
                 currentQuestionIndex++;
                 lockSkip();
@@ -3006,65 +3790,36 @@
                     renderQuestion();
                 }
             } else {
-                // Instantly pop up the wrong reflection modal before deducting life
-                                animateWrong();
-                                unlockSkip();
-                                showWrongReflectionModal();
+                handleWrongAnswer(currentQuestions[currentQuestionIndex], null, currentQuestionMode);
             }
         }
 
-        function showWrongReflectionModal() {
-            const modal = document.getElementById('wrong-reflection-modal');
-            modal.classList.remove('hidden');
-            if(window.MathJax) MathJax.typesetPromise([modal]);
-        }
+        function handleWrongAnswer(q, setParts, mode) {
+            unlockSkip();
+            recordErrorLog(q, currentLevel, setParts, mode);
+            animateWrong();
+            showWrongFeedback();
 
-        function submitWrongReflection(selectedLaw) {
-            const q = (currentLevel === 3) ? activePart : currentQuestions[currentQuestionIndex];
-            const actualLaw = q.firstStepLaw;
-
-            let isLawCorrect = (selectedLaw === actualLaw);
-            if (actualLaw === 'use_a' && selectedLaw !== '') isLawCorrect = true;
-
-            // Attach the reflection choice to the pending mistake record and save it.
-            if (lastMistake) {
-                lastMistake.studentLaw = selectedLaw;
-                lastMistake.lawCorrect = isLawCorrect;
-                commitMistake();
-            }
-
-            document.getElementById('wrong-reflection-modal').classList.add('hidden');
-
-            if (isLawCorrect) {
-                showToast("Good reflection! You identified the correct technique to start with.", "success");
-            } else {
-                showToast("Not quite! Remember to check the Formula sheet or ask AI Tutor.", "error");
-            }
-
-            // Deduct life and shake the game screen to indicate a mistake
             lives--;
             updateLivesUI();
             heartBreak();
             updateLiveScore();
-            showWrongFeedback();
-            
+            saveGameState();
+
             const gameArea = document.getElementById('main-game-area');
-            gameArea.classList.add('shake');
-            setTimeout(() => gameArea.classList.remove('shake'), 400);
+            if (gameArea) {
+                gameArea.classList.add('shake');
+                setTimeout(() => gameArea.classList.remove('shake'), 400);
+            }
 
             if (lives <= 0) {
                 setTimeout(() => {
                     showToast("Mission Failed. Out of lives!", "error");
                     quitGame();
                 }, 500);
-                return;
             }
-
-            // Wrong answer: STAY on the same question so the student can try again
-            // (a level still ends only after 5 correct answers).
-            if (currentLevel !== 3) {
-                renderQuestion();
-            }
+            // Wrong answer: stay on the same question so the student can try again.
+            // (A level still ends only after 5 correct answers.)
         }
 
         function winGame() {
@@ -3090,7 +3845,10 @@
         }
 
         // --- SKIP GATE: Skip unlocks only after a wrong attempt on this question/set ---
-        let skipUnlocked = false;
+        // Testing hook: open the page with ?unlockSkip=1 to keep Skip unlocked from the start.
+        const SKIP_ALWAYS = /(?:\?|&)unlockSkip=1(?:&|$)/.test((typeof location !== 'undefined' && location.search) || '');
+        let skipUnlocked = SKIP_ALWAYS;
+        let testSkipOverride = false;
 
         function refreshSkipBtn() {
             const btn = document.getElementById('skip-btn');
@@ -3105,7 +3863,24 @@
 
         function unlockSkip() { skipUnlocked = true; refreshSkipBtn(); }
 
-        function lockSkip() { skipUnlocked = false; refreshSkipBtn(); }
+        function lockSkip() { skipUnlocked = SKIP_ALWAYS || testSkipOverride; refreshSkipBtn(); }
+
+        // Testing hook: Shift+S (or Ctrl+Shift+S / Alt+Shift+S) unlocks Skip for the rest of
+        // the session, however the file was opened (double-click drops URL query strings).
+        if (typeof document !== 'undefined' && document.addEventListener) {
+            document.addEventListener('keydown', (e) => {
+                const key = String(e.key || '').toLowerCase();
+                const combo = (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey)
+                    || (e.shiftKey && (e.ctrlKey || e.altKey));
+                if (key !== 's' || !combo) return;
+                const tag = (e.target && e.target.tagName) || '';
+                if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+                e.preventDefault();
+                testSkipOverride = true;
+                unlockSkip();
+                if (typeof showToast === 'function') showToast('Test mode: Skip unlocked', 'info');
+            });
+        }
 
         // Skip the current question/set without scoring (no mark, no life loss).
         // Skipping randomly picks an unused question/set from the data bank (DIRECT pool)
@@ -3138,6 +3913,7 @@
                 } while ((usedTexts.has(tKey) || usedOpts.has(oKey) || usedAns.has(aKey)) && tries < 100);
                 parts.forEach((part, pi) => {
                     part.setNo = currentSetIndex + 1;
+                    part.setId = 's' + Date.now() + '_skip_' + currentSetIndex;
                     part.partIdx = pi;
                     part.partLabel = ['(a)', '(b)', '(c)'][pi];
                     part.paper = 'Paper 1';
@@ -3148,7 +3924,7 @@
                 activePart = null;
                 renderSet();
             } else {
-                const typeCount = { 0: 8, 1: 5, 2: 6 };
+                const typeCount = { 0: 12, 1: 9, 2: 10 };
                 const usedTexts = new Set(currentQuestions.map(q => q.qHtml || q.text));
                 const usedOpts = new Set(currentQuestions.map(q => [...q.options].sort().join('~')));
                 const usedAns = new Set(currentQuestions.map(q => q.answerStr));
@@ -3305,8 +4081,7 @@
                 level3: badgeRecords.level3,
                 level3Percent: getPercent('level3'),
                 level3Marks: scoreTotals.level3,
-                totalMarks: scoreTotals.level0 + scoreTotals.level1 + scoreTotals.level2 + scoreTotals.level3,
-                mistakes: mistakeLog.slice()
+                totalMarks: scoreTotals.level0 + scoreTotals.level1 + scoreTotals.level2 + scoreTotals.level3
             };
 
             // Send as text/plain (simple request, no CORS preflight) so we can read the
@@ -3322,7 +4097,6 @@
             .then(resp => resp.json())
             .then(data => {
                 if (data && data.status === 'success') {
-                    clearMistakes();
                     showToast("Data submitted to teacher successfully!", "success");
                 } else {
                     showToast("Server replied but data not saved: " + (data && data.message ? data.message : 'unknown error'), "error");
@@ -3352,6 +4126,7 @@
                 document.getElementById('student-no').value = studentProfile.no;
                 document.getElementById('student-name').value = studentProfile.name;
                 loadScores();
+                loadErrorLog();
                 loadProgress();
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('dashboard-screen').classList.remove('hidden');
