@@ -507,11 +507,11 @@
 
             <div id="conventional-area" class="hidden flex flex-col items-center gap-4 w-full max-w-md mx-auto mt-auto">
                 <p class="text-[11px] text-slate-400 text-center leading-tight">
-                    Type the number only, e.g. <span class='font-mono text-emerald-400'>5.4</span>, <span class='font-mono text-emerald-400'>2/5</span>, <span class='font-mono text-emerald-400'>300π</span>, <span class='font-mono text-emerald-400'>yes</span> or <span class='font-mono text-emerald-400'>no</span>.
+                    Type the number with its unit (unless the question already gives it), e.g. <span class='font-mono text-emerald-400'>8 cm²</span>, <span class='font-mono text-emerald-400'>288π cm³</span>, <span class='font-mono text-emerald-400'>11 cm</span>, <span class='font-mono text-emerald-400'>yes</span> or <span class='font-mono text-emerald-400'>no</span>.
                 </p>
 
                 <div class="flex gap-2 w-full">
-                    <input type="text" id="conventional-input" placeholder="e.g. 5.4 or 2/5" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-lg font-mono text-white outline-none focus:border-amber-500 transition shadow-inner" oninput="updateLivePreview()" onkeypress="handleEnter(event)">
+                    <input type="text" id="conventional-input" placeholder="e.g. 5.4 cm or 2/5 cm²" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-lg font-mono text-white outline-none focus:border-amber-500 transition shadow-inner" oninput="updateLivePreview()" onkeypress="handleEnter(event)">
                     <button onclick="submitFillAnswer()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 rounded-lg text-base transition shadow-md active:scale-95">
                         Submit
                     </button>
@@ -568,7 +568,7 @@
 
             <div id="error-log-fill-area" class="hidden flex flex-col items-center gap-4 w-full max-w-md mx-auto mt-auto">
                 <p class="text-[11px] text-slate-400 text-center leading-tight">
-                    Type the number with its unit when the question asks for one, e.g. <span class='font-mono text-emerald-400'>8 cm²</span> or <span class='font-mono text-emerald-400'>288π cm³</span>.
+                    Type the number with its unit (unless the question already gives it), e.g. <span class='font-mono text-emerald-400'>8 cm²</span> or <span class='font-mono text-emerald-400'>288π cm³</span>.
                 </p>
 
                 <div class="flex gap-2 w-full">
@@ -656,7 +656,7 @@
         const GOOGLE_SCRIPT_URL =
             'https://script.google.com/macros/s/AKfycbybFSAODKwifwclDTUhaKiPjC20eIaUGdiBBttHXaieZP_ydlQBQxvLMjTl9PSjums/exec';
 
-        const APP_VERSION = '9';
+        const APP_VERSION = '10';
         
         // Saved identity + in-progress game (iPad Safari reloads the tab when
         // memory runs low; without these the student is thrown back to login).
@@ -3666,7 +3666,7 @@
             } else {
                 inner += `
                 <div class="flex gap-2 w-full">
-                    <input type="text" id="l3-input-${pi}" placeholder="e.g. 5.4 or 2/5" oninput="updateL3Preview(${pi})" onkeypress="if(event.key==='Enter')submitSetPartFill(${pi})" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-lg font-mono text-white outline-none focus:border-amber-500 transition shadow-inner">
+                    <input type="text" id="l3-input-${pi}" placeholder="e.g. 5.4 cm or 2/5 cm²" oninput="updateL3Preview(${pi})" onkeypress="if(event.key==='Enter')submitSetPartFill(${pi})" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-lg font-mono text-white outline-none focus:border-amber-500 transition shadow-inner">
                     <button onclick="submitSetPartFill(${pi})" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 rounded-lg text-base transition shadow-md active:scale-95">Submit</button>
                 </div>
                 <div id="l3-helpers-${pi}" class="flex flex-wrap gap-2 justify-center w-full mt-2">`;
